@@ -1,0 +1,116 @@
+extends ../layouts/default
+
+block main
+  h1= playlist.title
+  - if (req.isAuthenticated())
+    form(action="/playlists/"+playlist.id, method="post", onsubmit="return confirm('Are you sure?')")
+      input(type='hidden', name='_csrf', value="#{csrf_token}")
+      a.btn.btn-default(href='/playlists/'+playlist._id+'/edit', title="edit") Edit
+      | &nbsp;
+      input(type="hidden", name="_method", value="DELETE")
+      button.btn.btn-danger(type="submit") Delete
+
+block content
+  .row
+    .col-md-8
+      p=playlist.description
+      
+    .col-md-4
+      .meta
+        - if (playlist.user)
+          - var name = playlist.user.name ? playlist.user.name : playlist.user.username
+          span Author :&nbsp;
+            a(href="/users/"+playlist.user._id)= name
+        &nbsp;&nbsp;&nbsp;
+        span.muted= formatDate(playlist.createdAt, "%b %d, %Y at %I:%M %p")
+  
+  .row
+    .col-md-8
+      .video-player-container
+        .video-player#player
+        
+    .col-md-4
+      - if (req.isAuthenticated())
+        form.yt-search
+          input(type='text', name='yt-search', value="", placeholder="Keyword")
+          button.btn.btn-default(type="Search")
+            span.glyphicon.glyphicon-search
+            
+        .results-list
+      - else
+        div Login to add video from Youtube
+        
+  .row
+    .col-md-12
+      h3 Video List
+    
+      .videos-list
+        - each video in playlist.videos
+          include ../videos/video
+      
+      include ../videos/form
+  
+  script.
+    var tag = document.createElement('script');
+
+    tag.src = "https://www.youtube.com/iframe_api"; 
+    var firstScriptTag = document.getElementsByTagName('script')[0];
+    firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+    
+    var player;
+    var isVideoDragging = false;
+    var isVideoMouseDown = false;
+    var vIndex = 0;
+    var videoYTID = document.getElementsByClassName("video")[vIndex].getAttribute("data-yt-id")
+    function onYouTubeIframeAPIReady() {
+      player = new YT.Player('player', {
+        height: '372',
+        width: '610',
+        videoId: videoYTID,
+        events: {
+          'onReady': onPlayerReady,
+          'onStateChange': onPlayerStateChange
+        }
+      });
+    }
+
+    function onPlayerReady(event) {
+      // event.target.playVideo();
+      $(document).ready(function() {
+        $('.videos-list .video[data-slick-index=0]').addClass('active');
+        
+        $('.videos-list .video a').on('mousedown', function(e) {
+          isVideoMouseDown = true;
+        });
+        $('.videos-list .video a').on('mousemove', function(e) {
+          if (isVideoMouseDown) {
+            isVideoDragging = true;
+          }
+        });
+        $('.videos-list .video a').on('mouseup', function(e) {
+          if (isVideoMouseDown && !isVideoDragging) {
+            e.preventDefault();
+            player.loadVideoById($(this).parent().data("ytId"));
+            vIndex = $(this).parent().data('slickIndex');
+            console.log('Now Playing - ' + vIndex);
+            $('.videos-list').slick('slickGoTo', parseInt(vIndex, 10));
+            $('.video').removeClass('active');
+            $(this).parent().addClass('active');
+          }
+          // reset flag
+          isVideoMouseDown = false;
+          isVideoDragging = false;
+        });
+      });
+    }
+    
+    function onPlayerStateChange(event) {
+      if (event.data == YT.PlayerState.ENDED) {
+        vIndex = ++vIndex % $('.videos-list .video').length;
+        player.loadVideoById($('.videos-list .video[data-slick-index=' + vIndex + ']').data("ytId"));
+        console.log('Now Playing - ' + vIndex);
+        $('.videos-list').slick('slickGoTo', parseInt(vIndex, 10));
+        $('.video').removeClass('active');
+        $('.videos-list .video[data-slick-index=' + vIndex + ']').addClass('active');
+      }
+    }

@@ -1,0 +1,14 @@
+article.playlist
+  h3
+    a(href='/playlists/'+playlist._id, title=playlist.title) #{playlist.title}
+
+  .meta
+    span.muted= formatDate(playlist.createdAt)
+
+    - if (playlist.user)
+      | &nbsp; - &nbsp;
+      span Author &nbsp;
+
+      - var name = playlist.user.name ? playlist.user.name : playlist.user.username
+
+      a(href="/users/"+playlist.user._id)= name

@@ -1,0 +1,16 @@
+extends ../layouts/default
+
+block main
+  h1= title
+
+block content
+  - if (playlists.length)
+    - each playlist in playlists
+      include playlist
+
+    - if (pages > 1)
+      ul.pagination
+        != createPagination(pages, page)
+  - else
+    h4.muted No playlists.&nbsp;
+      a(href="/playlists/new") create one

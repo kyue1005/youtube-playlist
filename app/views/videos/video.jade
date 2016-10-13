@@ -1,0 +1,17 @@
+- if (video)
+  .video(data-yt-id = video.yt_id)
+
+    a(href="https://www.youtube.com/watch?v="+video.yt_id, target="_blank")
+      img(src="http://img.youtube.com/vi/"+video.yt_id+"/0.jpg")
+      h6= video.title
+      span= video.duration
+
+    p.muted
+      form.form-inline(role="form", method="post", action="/playlists/" + playlist._id + "/videos/" + video._id, onsubmit="return confirm('Are you sure?')")
+        input(type='hidden', name='_csrf', value="#{csrf_token}")
+        // span.muted= formatDate(video.createdAt)
+        input(type="hidden", name="_method", value="DELETE")
+        button.btn.btn-danger.btn-link.error(type="submit") X
+        
+    .overlay
+      h4 Now Playing
