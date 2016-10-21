@@ -1,4 +1,4 @@
-form(method="post", action="/playlists/#{playlist._id}/videos", role="form")
+form.video-add.hidden(method="post", action="/playlists/#{playlist._id}/videos", role="form")
   input(type='hidden', name='_csrf', value="#{csrf_token}")
   .form-group
     input.form-control(type='text', name="title", placeholder='Title')

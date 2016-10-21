@@ -12,10 +12,10 @@ block main
 
 block content
   .row
-    .col-md-8
+    .col-sm-8
       p=playlist.description
       
-    .col-md-4
+    .col-sm-4
       .meta
         - if (playlist.user)
           - var name = playlist.user.name ? playlist.user.name : playlist.user.username
@@ -23,13 +23,13 @@ block content
             a(href="/users/"+playlist.user._id)= name
         &nbsp;&nbsp;&nbsp;
         span.muted= formatDate(playlist.createdAt, "%b %d, %Y at %I:%M %p")
-  
+
   .row
-    .col-md-8
+    .col-sm-8
       .video-player-container
         .video-player#player
-        
-    .col-md-4
+
+    .col-sm-4
       - if (req.isAuthenticated())
         form.yt-search
           input(type='text', name='yt-search', value="", placeholder="Keyword")
@@ -39,16 +39,16 @@ block content
         .results-list
       - else
         div Login to add video from Youtube
-        
+
   .row
-    .col-md-12
-      h3 Video List
-    
-      .videos-list
-        - each video in playlist.videos
-          include ../videos/video
+    .col-sm-12
+      h3 Playlist
       
-      include ../videos/form
+      .videos-list
+        - each video, index in playlist.videos
+          include ../videos/video
+
+  include ../videos/form
   
   script.
     var tag = document.createElement('script');
@@ -61,33 +61,39 @@ block content
     var isVideoDragging = false;
     var isVideoMouseDown = false;
     var vIndex = 0;
-    var videoYTID = document.getElementsByClassName("video")[vIndex].getAttribute("data-yt-id")
     function onYouTubeIframeAPIReady() {
-      player = new YT.Player('player', {
-        height: '372',
-        width: '610',
-        videoId: videoYTID,
-        events: {
-          'onReady': onPlayerReady,
-          'onStateChange': onPlayerStateChange
-        }
-      });
+      var $firstVideo = $('.videos-list .video[vid=0]')
+      if ($firstVideo) {
+        player = new YT.Player('player', {
+          height: '372',
+          width: '610',
+          videoId: $firstVideo.attr("data-yt-id"),
+          events: {
+            'onReady': onPlayerReady,
+            'onStateChange': onPlayerStateChange
+          }
+        });
+      }
     }
 
     function onPlayerReady(event) {
       // event.target.playVideo();
       $(document).ready(function() {
         $('.videos-list .video[data-slick-index=0]').addClass('active');
-        
-        $('.videos-list .video a').on('mousedown', function(e) {
+        // Disable click event.
+        $('.videos-list').delegate('.video a', 'click', function(e) {
+          e.preventDefault();
+        });
+        $('.videos-list').delegate('.video a', 'mousedown', function(e) {
+          e.preventDefault();
           isVideoMouseDown = true;
         });
-        $('.videos-list .video a').on('mousemove', function(e) {
+        $('.videos-list').delegate('.video a', 'mousemove', function(e) {
           if (isVideoMouseDown) {
             isVideoDragging = true;
           }
         });
-        $('.videos-list .video a').on('mouseup', function(e) {
+        $('.videos-list').delegate('.video a', 'mouseup', function(e) {
           if (isVideoMouseDown && !isVideoDragging) {
             e.preventDefault();
             player.loadVideoById($(this).parent().data("ytId"));
@@ -101,12 +107,26 @@ block content
           isVideoMouseDown = false;
           isVideoDragging = false;
         });
+        $('.videos-list').delegate('.video button', 'click', function(e) {
+          e.preventDefault();
+          var $this = $(this);
+          var $form = $this.parent('form');
+          $.post($form.attr('action'), $form.serialize(), function(data) {
+            alert(data);
+            console.log($this.closest('.video').attr('data-slick-index'));
+            $('.videos-list').slick('slickRemove', $this.closest('.video').attr('data-slick-index'));
+          })
+          .fail(function(jqXHR, textStatus) {
+            alert(jqXHR.responseText);
+          });
+        });
       });
     }
     
     function onPlayerStateChange(event) {
       if (event.data == YT.PlayerState.ENDED) {
-        vIndex = ++vIndex % $('.videos-list .video').length;
+        var next = $('.videos-list .video[data-slick-index=' + vIndex + ']').next().attr('data-slick-index');
+        vIndex = parseInt(next, 10) % $('.videos-list')[0].slick.slideCount;
         player.loadVideoById($('.videos-list .video[data-slick-index=' + vIndex + ']').data("ytId"));
         console.log('Now Playing - ' + vIndex);
         $('.videos-list').slick('slickGoTo', parseInt(vIndex, 10));
