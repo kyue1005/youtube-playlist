@@ -9,6 +9,7 @@
 
 const users = require('../app/controllers/users');
 const playlists = require('../app/controllers/playlists');
+const videos = require('../app/controllers/videos');
 const auth = require('./middlewares/authorization');
 
 /**
@@ -96,13 +97,13 @@ module.exports = function (app, passport) {
   app.put('/playlists/:id', playlistAuth, playlists.update);
   app.delete('/playlists/:id', playlistAuth, playlists.destroy);
 
+  // videos routes
+  app.param('videoId', videos.load);
+  app.post('/playlists/:id/videos', playlistAuth, videos.create);
+  app.delete('/playlists/:id/videos/:videoId', playlistAuth, videos.destroy);
+  
   // home route
   app.get('/', playlists.index);
-
-  // videos routes
-  // app.post('/playlists/:id/videos', auth.requiresLogin, playlists.addVideo);
-  // app.delete('/playlists/:id/vidoes/:videoId', playlistAuth, playlists.removeVideo);
-
 
   /**
    * Error handling
@@ -129,9 +130,11 @@ module.exports = function (app, passport) {
 
   // assume 404 since no middleware responded
   app.use(function (req, res) {
-    res.status(404).render('404', {
+    const payload = {
       url: req.originalUrl,
       error: 'Not found'
-    });
+    };
+    // if (req.accepts('json')) return res.status(404).json(payload);
+    res.status(404).render('404', payload);
   });
 };

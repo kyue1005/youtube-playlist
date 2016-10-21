@@ -14,7 +14,6 @@ const bodyParser = require('body-parser');
 const methodOverride = require('method-override');
 const csrf = require('csurf');
 const multer = require('multer');
-const swig = require('swig');
 
 const mongoStore = require('connect-mongo')(session);
 const flash = require('connect-flash');
@@ -52,13 +51,6 @@ module.exports = function (app, passport) {
   // Don't log during tests
   // Logging middleware
   if (env !== 'test') app.use(morgan(log));
-
-  // Swig templating engine settings
-  if (env === 'development' || env === 'test') {
-    swig.setDefaults({
-      cache: false
-    });
-  }
 
   // set views path, template engine and default layout
   app.set('views', config.root + '/app/views');
