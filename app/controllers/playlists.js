@@ -15,9 +15,8 @@ const Playlist = mongoose.model('Playlist');
  */
 
 exports.load = wrap(function* (req, res, next, _id) {
-  const criteria = { _id };
-  req.profile = yield Playlist.load({ criteria });
-  if (!req.profile) return next(new Error('Playlist not found'));
+  req.playlist = yield Playlist.load(_id);
+  if (!req.playlist) return next(new Error('Playlist not found'));
   next();
 });
 
@@ -44,8 +43,6 @@ exports.index = wrap(function* (req, res) {
   });
 });
 
-
-
 /**
  * New Playlists
  */
@@ -57,14 +54,12 @@ exports.new = function (req, res){
   });
 };
 
-
-
 /**
  * Create an playlist
  */
 
 exports.create = wrap(function* (req, res) {
-  const playlist = new Playlist(only(req.body));
+  const playlist = new Playlist(only(req.body, 'title description'));
   playlist.user = req.user;
   try {
     yield playlist.save();
@@ -79,7 +74,7 @@ exports.create = wrap(function* (req, res) {
  */
 
 exports.show = function (req, res){
-  res.render(res, 'playlists/show', {
+  res.render('playlists/show', {
     title: req.playlist.title,
     playlist: req.playlist
   });
@@ -102,7 +97,8 @@ exports.edit = function (req, res) {
 
 exports.update = wrap(function* (req, res) {
   const playlist = req.playlist;
-  assign(playlist, only(req.body));
+  console.log(req.body);
+  assign(playlist, only(req.body, 'title description'));
   try {
     yield playlist.save();
     res.redirect('/playlists/' + playlist._id);
@@ -113,10 +109,10 @@ exports.update = wrap(function* (req, res) {
 
 
 /**
- * Delete an article
+ * Delete an playlist
  */
 
 exports.destroy = wrap(function* (req, res) {
-  yield req.article.remove();
+  yield req.playlist.remove();
   req.flash('info', 'Deleted successfully');
 });
