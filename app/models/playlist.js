@@ -16,7 +16,11 @@ const PlaylistSchema = new Schema({
   title: { type : String, default : '', trim : true },
   description: { type : String, default : '', trim : true },
   user: { type : Schema.ObjectId, ref : 'User' },
-  videos: [{ type: Schema.Types.ObjectId, ref: 'Video' }],
+  videos: [{
+    title: { type : String, default : '', trim : true },
+    yt_id: { type : String, default : '', trim : true },
+    duration: { type : String, default : '', trim : true }
+  }],
   createdAt  : { type : Date, default : Date.now }
 });
 
@@ -32,8 +36,45 @@ PlaylistSchema.path('description').required(true, 'Playlist description cannot b
  */
 
 PlaylistSchema.methods = {
+  
+  /**
+   * Add comment
+   *
+   * @param {Object} video
+   * @api private
+   */
+  addVideo: function (video) {
+    // Check duplication
+    const target = this.videos
+      .map(video => video.yt_id)
+      .indexOf(video.yt_id);
+    if (~target) return [false];
+    
+    this.videos.push({
+      title: video.title,
+      yt_id: video.yt_id,
+      duration: video.duration,
+    });
 
-   
+    return this.save();
+  },
+  
+  /**
+   * Remove video
+   *
+   * @param {String} videoId
+   * @api private
+   */
+
+  removeVideo: function (videoId) {
+    const index = this.videos
+      .map(video => video.id)
+      .indexOf(videoId);
+
+    if (~index) this.videos.splice(index, 1);
+    else throw new Error('Video not found');
+    return this.save();
+  }
 }
 
 /**
@@ -71,19 +112,6 @@ PlaylistSchema.statics = {
       .sort({ createdAt: -1 })
       .limit(limit)
       .skip(limit * page)
-      .exec();
-  },
-  
-  /**
-   * List playlist's video
-   *
-   * @param {Object} options
-   * @api private
-   */
-
-  listVideo: function (_id) {
-    return this.findOne({ _id })
-      .populate('videos')
       .exec();
   }
 };
